@@ -45,6 +45,14 @@ function custrest_register_settings() {
     );
 
     add_settings_field(
+        'custrest_allowed_roles',
+        __( 'Allowed User Roles', 'custrest' ),
+        'custrest_allowed_roles_field',
+        'custrest-settings',
+        'custrest_main_section'
+    );
+
+    add_settings_field(
         'custrest_ignore_pages',
         __( 'Ignore Pages/Posts', 'custrest' ),
         'custrest_ignore_pages_field',
@@ -78,6 +86,28 @@ function custrest_post_types_field() {
         );
     }
     echo '</fieldset>';
+}
+
+function custrest_allowed_roles_field() {
+    $options = get_option( CUSTREST_OPTION_KEY );
+    $selected = isset( $options['allowed_roles'] ) ? (array) $options['allowed_roles'] : array();
+    global $wp_roles;
+    if ( ! isset( $wp_roles ) ) $wp_roles = new WP_Roles();
+    $roles = $wp_roles->roles;
+    echo '<fieldset aria-labelledby="custrest_allowed_roles_label">';
+    echo '<legend id="custrest_allowed_roles_label" class="screen-reader-text">' . esc_html__( 'Allowed User Roles', 'custrest' ) . '</legend>';
+    foreach ( $roles as $role_key => $role ) {
+        printf(
+            '<label style="margin-right:16px;"><input type="checkbox" name="%s[allowed_roles][]" value="%s" %s aria-checked="%s" /> %s</label>',
+            esc_attr( CUSTREST_OPTION_KEY ),
+            esc_attr( $role_key ),
+            checked( in_array( $role_key, $selected ), true, false ),
+            checked( in_array( $role_key, $selected ), true, false ),
+            esc_html( $role['name'] )
+        );
+    }
+    echo '</fieldset>';
+    echo '<p class="description">' . __( 'Only users with these roles can access restricted content. Leave empty to allow all logged-in users.', 'custrest' ) . '</p>';
 }
 
 function custrest_ignore_pages_field() {
@@ -197,6 +227,7 @@ function custrest_sanitize_settings( $input ) {
     $output['post_types'] = isset( $input['post_types'] ) ? array_map( 'sanitize_text_field', (array) $input['post_types'] ) : array();
     $output['redirect_url'] = isset( $input['redirect_url'] ) ? esc_url_raw( $input['redirect_url'] ) : '';
     $output['ignore_pages'] = isset( $input['ignore_pages'] ) ? array_map( 'intval', (array) $input['ignore_pages'] ) : array();
+    $output['allowed_roles'] = isset( $input['allowed_roles'] ) ? array_map( 'sanitize_text_field', (array) $input['allowed_roles'] ) : array();
     return $output;
 }
 

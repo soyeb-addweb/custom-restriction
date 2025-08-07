@@ -26,6 +26,7 @@ function custrest_maybe_restrict_access() {
     $restricted_types = isset( $options['post_types'] ) ? (array) $options['post_types'] : array();
     $redirect_url = isset( $options['redirect_url'] ) && $options['redirect_url'] ? esc_url( $options['redirect_url'] ) : wp_login_url( get_permalink() );
     $ignore_pages = isset( $options['ignore_pages'] ) ? (array) $options['ignore_pages'] : array();
+    $allowed_roles = isset( $options['allowed_roles'] ) ? (array) $options['allowed_roles'] : array();
 
     if ( in_array( $post->ID, $ignore_pages, true ) ) return;
 
@@ -44,11 +45,26 @@ function custrest_maybe_restrict_access() {
 
     do_action( 'custrest_after_restriction_check', $post, $restricted );
 
-    if ( $restricted && ! is_user_logged_in() ) {
-        $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
-        do_action( 'custrest_before_redirect', $redirect_url, $post );
-        wp_safe_redirect( $redirect_url );
-        exit;
+    if ( $restricted ) {
+        $user = wp_get_current_user();
+        $has_role = false;
+        if ( ! empty( $allowed_roles ) ) {
+            foreach ( $user->roles as $role ) {
+                if ( in_array( $role, $allowed_roles, true ) ) {
+                    $has_role = true;
+                    break;
+                }
+            }
+        } else {
+            $has_role = is_user_logged_in();
+        }
+        $has_role = apply_filters( 'custrest_user_has_allowed_role', $has_role, $user, $post->ID, $post_type );
+        if ( ! $has_role ) {
+            $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
+            do_action( 'custrest_before_redirect', $redirect_url, $post );
+            wp_safe_redirect( $redirect_url );
+            exit;
+        }
     }
 }
 
