@@ -67,6 +67,14 @@ function custrest_register_settings() {
         'custrest-settings',
         'custrest_main_section'
     );
+
+    add_settings_field(
+        'custrest_time_window',
+        __( 'Global Access Window', 'custrest' ),
+        'custrest_time_window_field',
+        'custrest-settings',
+        'custrest_main_section'
+    );
 }
 
 function custrest_post_types_field() {
@@ -149,6 +157,17 @@ function custrest_redirect_url_field() {
     echo '<p id="custrest_redirect_url_desc" class="description">' . __( 'Leave blank to use the default WordPress login page.', 'custrest' ) . '</p>';
 }
 
+function custrest_time_window_field() {
+    $options = get_option( CUSTREST_OPTION_KEY );
+    $start = isset( $options['time_start'] ) ? esc_attr( $options['time_start'] ) : '';
+    $end = isset( $options['time_end'] ) ? esc_attr( $options['time_end'] ) : '';
+    echo '<label for="custrest_time_start">' . esc_html__( 'Start', 'custrest' ) . '</label> ';
+    echo '<input type="datetime-local" id="custrest_time_start" name="' . esc_attr( CUSTREST_OPTION_KEY ) . '[time_start]" value="' . $start . '" style="max-width:200px;" /> ';
+    echo '<label for="custrest_time_end">' . esc_html__( 'End', 'custrest' ) . '</label> ';
+    echo '<input type="datetime-local" id="custrest_time_end" name="' . esc_attr( CUSTREST_OPTION_KEY ) . '[time_end]" value="' . $end . '" style="max-width:200px;" />';
+    echo '<p class="description">' . __( 'If set, restricted content is only accessible between these dates/times. Leave blank for no time restriction.', 'custrest' ) . '</p>';
+}
+
 function custrest_settings_page() {
     ?>
     <div class="wrap">
@@ -228,6 +247,8 @@ function custrest_sanitize_settings( $input ) {
     $output['redirect_url'] = isset( $input['redirect_url'] ) ? esc_url_raw( $input['redirect_url'] ) : '';
     $output['ignore_pages'] = isset( $input['ignore_pages'] ) ? array_map( 'intval', (array) $input['ignore_pages'] ) : array();
     $output['allowed_roles'] = isset( $input['allowed_roles'] ) ? array_map( 'sanitize_text_field', (array) $input['allowed_roles'] ) : array();
+    $output['time_start'] = isset( $input['time_start'] ) ? sanitize_text_field( $input['time_start'] ) : '';
+    $output['time_end'] = isset( $input['time_end'] ) ? sanitize_text_field( $input['time_end'] ) : '';
     return $output;
 }
 

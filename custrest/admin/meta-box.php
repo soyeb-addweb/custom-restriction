@@ -54,6 +54,8 @@ function custrest_restriction_meta_box_callback( $post ) {
         'inherit'    => '#0073aa',
         'ignored'    => '#ffb900',
     );
+    $time_start = get_post_meta( $post->ID, '_custrest_time_start', true );
+    $time_end = get_post_meta( $post->ID, '_custrest_time_end', true );
     wp_nonce_field( 'custrest_save_meta', 'custrest_meta_nonce' );
     ?>
     <div aria-live="polite" aria-atomic="true" style="margin-bottom:10px;">
@@ -89,6 +91,14 @@ function custrest_restriction_meta_box_callback( $post ) {
         </select>
         <p class="description"><?php _e( 'If set, only these roles can access this post/page. Leave empty to inherit global roles.', 'custrest' ); ?></p>
     </fieldset>
+    <fieldset aria-labelledby="custrest_time_legend" style="margin-top:10px;">
+        <legend id="custrest_time_legend"><?php _e( 'Access Window (Override)', 'custrest' ); ?></legend>
+        <label for="custrest_time_start" class="screen-reader-text"><?php _e( 'Start', 'custrest' ); ?></label>
+        <input type="datetime-local" id="custrest_time_start" name="custrest_time_start" value="<?php echo esc_attr( $time_start ); ?>" style="max-width:180px;" />
+        <label for="custrest_time_end" class="screen-reader-text"><?php _e( 'End', 'custrest' ); ?></label>
+        <input type="datetime-local" id="custrest_time_end" name="custrest_time_end" value="<?php echo esc_attr( $time_end ); ?>" style="max-width:180px;" />
+        <p class="description"><?php _e( 'If set, this post/page is only accessible between these dates/times. Leave blank to inherit global window.', 'custrest' ); ?></p>
+    </fieldset>
     <?php
 }
 
@@ -114,5 +124,16 @@ function custrest_save_restriction_meta_box( $post_id ) {
         update_post_meta( $post_id, '_custrest_roles', $roles );
     } else {
         delete_post_meta( $post_id, '_custrest_roles' );
+    }
+
+    if ( isset( $_POST['custrest_time_start'] ) && $_POST['custrest_time_start'] ) {
+        update_post_meta( $post_id, '_custrest_time_start', sanitize_text_field( $_POST['custrest_time_start'] ) );
+    } else {
+        delete_post_meta( $post_id, '_custrest_time_start' );
+    }
+    if ( isset( $_POST['custrest_time_end'] ) && $_POST['custrest_time_end'] ) {
+        update_post_meta( $post_id, '_custrest_time_end', sanitize_text_field( $_POST['custrest_time_end'] ) );
+    } else {
+        delete_post_meta( $post_id, '_custrest_time_end' );
     }
 }

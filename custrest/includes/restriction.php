@@ -35,11 +35,22 @@ function custrest_maybe_restrict_access() {
 
     $override = get_post_meta( $post->ID, '_custrest_override', true );
     $roles_override = get_post_meta( $post->ID, '_custrest_roles', true );
-    if ( $override === 'disable' ) return;
-    if ( $override === 'force' ) {
-        $restricted = true;
-    } else {
-        $restricted = true;
+    $time_start = get_post_meta( $post->ID, '_custrest_time_start', true );
+    $time_end = get_post_meta( $post->ID, '_custrest_time_end', true );
+    $global_time_start = isset( $options['time_start'] ) ? $options['time_start'] : '';
+    $global_time_end = isset( $options['time_end'] ) ? $options['time_end'] : '';
+    $window_start = $time_start ? $time_start : $global_time_start;
+    $window_end = $time_end ? $time_end : $global_time_end;
+    $now = current_time( 'Y-m-d\TH:i', true );
+    $in_window = true;
+    if ( $window_start && $now < $window_start ) $in_window = false;
+    if ( $window_end && $now > $window_end ) $in_window = false;
+    $in_window = apply_filters( 'custrest_in_time_window', $in_window, $window_start, $window_end, $post->ID, $post_type );
+    if ( ! $in_window ) {
+        $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
+        do_action( 'custrest_before_redirect', $redirect_url, $post );
+        wp_safe_redirect( $redirect_url );
+        exit;
     }
 
     $restricted = apply_filters( 'custrest_is_restricted', $restricted, $post->ID, $post_type );
