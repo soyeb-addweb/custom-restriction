@@ -34,3 +34,26 @@ function custrest_load_plugin() {
     require_once CUSTREST_DIR . 'includes/restriction.php';
     require_once CUSTREST_DIR . 'includes/helpers.php';
 }
+
+register_activation_hook( __FILE__, 'custrest_create_logs_table' );
+function custrest_create_logs_table() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'custrest_logs';
+    $charset_collate = $wpdb->get_charset_collate();
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    $sql = "CREATE TABLE IF NOT EXISTS $table (
+        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+        post_id bigint(20) unsigned NOT NULL,
+        user_id bigint(20) unsigned NOT NULL,
+        ip varchar(100) DEFAULT '' NOT NULL,
+        ua varchar(255) DEFAULT '' NOT NULL,
+        reason varchar(50) DEFAULT '' NOT NULL,
+        blocked_at datetime NOT NULL,
+        PRIMARY KEY  (id),
+        KEY post_id (post_id),
+        KEY user_id (user_id),
+        KEY reason (reason),
+        KEY blocked_at (blocked_at)
+    ) $charset_collate;";
+    dbDelta( $sql );
+}

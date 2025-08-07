@@ -15,6 +15,16 @@ add_filter( 'bulk_actions-edit-post', 'custrest_register_bulk_actions' );
 add_filter( 'handle_bulk_actions-edit-page', 'custrest_handle_bulk_actions', 10, 3 );
 add_filter( 'handle_bulk_actions-edit-post', 'custrest_handle_bulk_actions', 10, 3 );
 add_action( 'admin_notices', 'custrest_bulk_action_notice' );
+add_action( 'admin_menu', function() {
+    add_submenu_page(
+        'options-general.php',
+        __( 'Restriction Logs', 'custrest' ),
+        __( 'Restriction Logs', 'custrest' ),
+        'manage_options',
+        'custrest-logs',
+        'custrest_logs_page'
+    );
+} );
 
 function custrest_admin_menu() {
     add_options_page(
@@ -369,4 +379,67 @@ function custrest_bulk_action_notice() {
     if ( ! empty( $_REQUEST['custrest_bulk_ignore'] ) ) {
         printf( '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Restriction ignored for %d items.', 'custrest' ) . '</p></div>', intval( $_REQUEST['custrest_bulk_ignore'] ) );
     }
+}
+
+function custrest_logs_page() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'custrest_logs';
+    $paged = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
+    $per_page = 20;
+    $offset = ( $paged - 1 ) * $per_page;
+    $where = '1=1';
+    $args = array();
+    if ( ! empty( $_GET['reason'] ) ) {
+        $where .= ' AND reason = %s';
+        $args[] = sanitize_text_field( $_GET['reason'] );
+    }
+    $total = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table WHERE $where", ...$args ) );
+    $logs = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table WHERE $where ORDER BY blocked_at DESC LIMIT %d OFFSET %d", ...array_merge( $args, [ $per_page, $offset ] ) ) );
+    $reasons = $wpdb->get_col( "SELECT DISTINCT reason FROM $table" );
+    echo '<div class="wrap"><h1>' . esc_html__( 'Restriction Logs', 'custrest' ) . '</h1>';
+    echo '<form method="get" style="margin-bottom:16px;">';
+    echo '<input type="hidden" name="page" value="custrest-logs" />';
+    echo '<label for="custrest_reason_filter">' . esc_html__( 'Reason:', 'custrest' ) . '</label> ';
+    echo '<select name="reason" id="custrest_reason_filter">';
+    echo '<option value="">' . esc_html__( 'All', 'custrest' ) . '</option>';
+    foreach ( $reasons as $reason ) {
+        printf( '<option value="%s" %s>%s</option>', esc_attr( $reason ), selected( isset( $_GET['reason'] ) && $_GET['reason'] === $reason, true, false ), esc_html( ucfirst( $reason ) ) );
+    }
+    echo '</select> ';
+    submit_button( __( 'Filter', 'custrest' ), 'secondary', '', false );
+    echo '</form>';
+    echo '<table class="widefat striped"><thead><tr>';
+    echo '<th>' . esc_html__( 'Time', 'custrest' ) . '</th>';
+    echo '<th>' . esc_html__( 'Post', 'custrest' ) . '</th>';
+    echo '<th>' . esc_html__( 'User', 'custrest' ) . '</th>';
+    echo '<th>' . esc_html__( 'IP', 'custrest' ) . '</th>';
+    echo '<th>' . esc_html__( 'Reason', 'custrest' ) . '</th>';
+    echo '</tr></thead><tbody>';
+    foreach ( $logs as $log ) {
+        $post_link = get_edit_post_link( $log->post_id );
+        $post_title = get_the_title( $log->post_id );
+        $user = $log->user_id ? get_userdata( $log->user_id ) : false;
+        echo '<tr>';
+        echo '<td>' . esc_html( $log->blocked_at ) . '</td>';
+        echo '<td>' . ( $post_link ? '<a href="' . esc_url( $post_link ) . '">' . esc_html( $post_title ) . '</a>' : esc_html( $log->post_id ) ) . '</td>';
+        echo '<td>' . ( $user ? esc_html( $user->user_login ) : esc_html__( 'Guest', 'custrest' ) ) . '</td>';
+        echo '<td>' . esc_html( $log->ip ) . '</td>';
+        echo '<td>' . esc_html( ucfirst( $log->reason ) ) . '</td>';
+        echo '</tr>';
+    }
+    if ( ! $logs ) {
+        echo '<tr><td colspan="5">' . esc_html__( 'No logs found.', 'custrest' ) . '</td></tr>';
+    }
+    echo '</tbody></table>';
+    // Pagination
+    $total_pages = ceil( $total / $per_page );
+    if ( $total_pages > 1 ) {
+        echo '<div class="tablenav"><div class="tablenav-pages">';
+        for ( $i = 1; $i <= $total_pages; $i++ ) {
+            $url = add_query_arg( array( 'paged' => $i ), remove_query_arg( 'paged' ) );
+            printf( '<a class="button %s" href="%s">%d</a> ', $i === $paged ? 'button-primary' : '', esc_url( $url ), $i );
+        }
+        echo '</div></div>';
+    }
+    echo '</div>';
 }

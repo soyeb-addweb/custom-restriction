@@ -50,6 +50,7 @@ function custrest_maybe_restrict_access() {
     $global_custom_message = isset( $options['custom_message'] ) ? $options['custom_message'] : '';
     $message_to_show = $custom_message ? $custom_message : $global_custom_message;
     if ( ! $in_window ) {
+        custrest_log_blocked_attempt( $post->ID, 'time_window' );
         if ( $message_to_show ) {
             wp_die( $message_to_show, __( 'Restricted', 'custrest' ), array( 'response' => 403 ) );
         } else {
@@ -80,6 +81,7 @@ function custrest_maybe_restrict_access() {
         }
         $has_role = apply_filters( 'custrest_user_has_allowed_role', $has_role, $user, $post->ID, $post_type );
         if ( ! $has_role ) {
+            custrest_log_blocked_attempt( $post->ID, 'role' );
             if ( $message_to_show ) {
                 wp_die( $message_to_show, __( 'Restricted', 'custrest' ), array( 'response' => 403 ) );
             } else {
@@ -108,4 +110,21 @@ function custrest_show_restriction_notice() {
         echo '<div class="notice notice-warning is-dismissible"><p>' . sprintf( esc_html__( 'A restriction redirect was triggered for "%s" (Post ID: %d).', 'custrest' ), esc_html( $title ), intval( $post_id ) ) . '</p></div>';
         delete_transient( $key );
     }
+}
+
+function custrest_log_blocked_attempt( $post_id, $reason = 'restricted' ) {
+    global $wpdb;
+    $table = $wpdb->prefix . 'custrest_logs';
+    $user = wp_get_current_user();
+    $user_id = $user && $user->ID ? $user->ID : 0;
+    $ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( $_SERVER['REMOTE_ADDR'] ) : '';
+    $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( $_SERVER['HTTP_USER_AGENT'] ) : '';
+    $wpdb->insert( $table, array(
+        'post_id' => intval( $post_id ),
+        'user_id' => intval( $user_id ),
+        'ip'      => $ip,
+        'ua'      => $ua,
+        'reason'  => sanitize_text_field( $reason ),
+        'blocked_at' => current_time( 'mysql', 1 ),
+    ) );
 }
