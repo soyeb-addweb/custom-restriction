@@ -75,6 +75,14 @@ function custrest_register_settings() {
         'custrest-settings',
         'custrest_main_section'
     );
+
+    add_settings_field(
+        'custrest_custom_message',
+        __( 'Custom Restriction Message', 'custrest' ),
+        'custrest_custom_message_field',
+        'custrest-settings',
+        'custrest_main_section'
+    );
 }
 
 function custrest_post_types_field() {
@@ -168,6 +176,13 @@ function custrest_time_window_field() {
     echo '<p class="description">' . __( 'If set, restricted content is only accessible between these dates/times. Leave blank for no time restriction.', 'custrest' ) . '</p>';
 }
 
+function custrest_custom_message_field() {
+    $options = get_option( CUSTREST_OPTION_KEY );
+    $msg = isset( $options['custom_message'] ) ? $options['custom_message'] : '';
+    echo '<textarea name="' . esc_attr( CUSTREST_OPTION_KEY ) . '[custom_message]" rows="4" style="width:100%;max-width:500px;">' . esc_textarea( $msg ) . '</textarea>';
+    echo '<p class="description">' . __( 'This message (HTML allowed) will be shown to users who are restricted, instead of redirecting. Leave blank to use redirect.', 'custrest' ) . '</p>';
+}
+
 function custrest_settings_page() {
     ?>
     <div class="wrap">
@@ -249,6 +264,7 @@ function custrest_sanitize_settings( $input ) {
     $output['allowed_roles'] = isset( $input['allowed_roles'] ) ? array_map( 'sanitize_text_field', (array) $input['allowed_roles'] ) : array();
     $output['time_start'] = isset( $input['time_start'] ) ? sanitize_text_field( $input['time_start'] ) : '';
     $output['time_end'] = isset( $input['time_end'] ) ? sanitize_text_field( $input['time_end'] ) : '';
+    $output['custom_message'] = isset( $input['custom_message'] ) ? wp_kses_post( $input['custom_message'] ) : '';
     return $output;
 }
 

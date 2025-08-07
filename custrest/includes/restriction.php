@@ -46,10 +46,17 @@ function custrest_maybe_restrict_access() {
     if ( $window_start && $now < $window_start ) $in_window = false;
     if ( $window_end && $now > $window_end ) $in_window = false;
     $in_window = apply_filters( 'custrest_in_time_window', $in_window, $window_start, $window_end, $post->ID, $post_type );
+    $custom_message = get_post_meta( $post->ID, '_custrest_custom_message', true );
+    $global_custom_message = isset( $options['custom_message'] ) ? $options['custom_message'] : '';
+    $message_to_show = $custom_message ? $custom_message : $global_custom_message;
     if ( ! $in_window ) {
-        $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
-        do_action( 'custrest_before_redirect', $redirect_url, $post );
-        wp_safe_redirect( $redirect_url );
+        if ( $message_to_show ) {
+            wp_die( $message_to_show, __( 'Restricted', 'custrest' ), array( 'response' => 403 ) );
+        } else {
+            $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
+            do_action( 'custrest_before_redirect', $redirect_url, $post );
+            wp_safe_redirect( $redirect_url );
+        }
         exit;
     }
 
@@ -73,9 +80,13 @@ function custrest_maybe_restrict_access() {
         }
         $has_role = apply_filters( 'custrest_user_has_allowed_role', $has_role, $user, $post->ID, $post_type );
         if ( ! $has_role ) {
-            $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
-            do_action( 'custrest_before_redirect', $redirect_url, $post );
-            wp_safe_redirect( $redirect_url );
+            if ( $message_to_show ) {
+                wp_die( $message_to_show, __( 'Restricted', 'custrest' ), array( 'response' => 403 ) );
+            } else {
+                $redirect_url = apply_filters( 'custrest_redirect_url', $redirect_url, $post->ID, $post_type );
+                do_action( 'custrest_before_redirect', $redirect_url, $post );
+                wp_safe_redirect( $redirect_url );
+            }
             exit;
         }
     }

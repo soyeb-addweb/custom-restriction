@@ -56,6 +56,7 @@ function custrest_restriction_meta_box_callback( $post ) {
     );
     $time_start = get_post_meta( $post->ID, '_custrest_time_start', true );
     $time_end = get_post_meta( $post->ID, '_custrest_time_end', true );
+    $custom_message = get_post_meta( $post->ID, '_custrest_custom_message', true );
     wp_nonce_field( 'custrest_save_meta', 'custrest_meta_nonce' );
     ?>
     <div aria-live="polite" aria-atomic="true" style="margin-bottom:10px;">
@@ -99,6 +100,12 @@ function custrest_restriction_meta_box_callback( $post ) {
         <input type="datetime-local" id="custrest_time_end" name="custrest_time_end" value="<?php echo esc_attr( $time_end ); ?>" style="max-width:180px;" />
         <p class="description"><?php _e( 'If set, this post/page is only accessible between these dates/times. Leave blank to inherit global window.', 'custrest' ); ?></p>
     </fieldset>
+    <fieldset aria-labelledby="custrest_msg_legend" style="margin-top:10px;">
+        <legend id="custrest_msg_legend"><?php _e( 'Custom Restriction Message (Override)', 'custrest' ); ?></legend>
+        <label for="custrest_custom_message" class="screen-reader-text"><?php _e( 'Custom Restriction Message', 'custrest' ); ?></label>
+        <textarea id="custrest_custom_message" name="custrest_custom_message" rows="3" style="width:100%;max-width:220px;"><?php echo esc_textarea( $custom_message ); ?></textarea>
+        <p class="description"><?php _e( 'If set, this message (HTML allowed) will be shown to restricted users for this post/page. Leave blank to inherit global message.', 'custrest' ); ?></p>
+    </fieldset>
     <?php
 }
 
@@ -135,5 +142,10 @@ function custrest_save_restriction_meta_box( $post_id ) {
         update_post_meta( $post_id, '_custrest_time_end', sanitize_text_field( $_POST['custrest_time_end'] ) );
     } else {
         delete_post_meta( $post_id, '_custrest_time_end' );
+    }
+    if ( isset( $_POST['custrest_custom_message'] ) && $_POST['custrest_custom_message'] ) {
+        update_post_meta( $post_id, '_custrest_custom_message', wp_kses_post( $_POST['custrest_custom_message'] ) );
+    } else {
+        delete_post_meta( $post_id, '_custrest_custom_message' );
     }
 }
