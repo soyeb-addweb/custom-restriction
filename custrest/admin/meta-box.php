@@ -24,9 +24,11 @@ function custrest_add_restriction_meta_box() {
 
 function custrest_restriction_meta_box_callback( $post ) {
     $value = get_post_meta( $post->ID, '_custrest_override', true );
+    $roles_override = get_post_meta( $post->ID, '_custrest_roles', true );
     $options = get_option( CUSTREST_OPTION_KEY );
     $restricted_types = isset( $options['post_types'] ) ? (array) $options['post_types'] : array();
     $ignore_pages = isset( $options['ignore_pages'] ) ? (array) $options['ignore_pages'] : array();
+    $global_roles = isset( $options['allowed_roles'] ) ? (array) $options['allowed_roles'] : array();
     $post_type = get_post_type( $post );
     $status = 'inherit';
     if ( in_array( $post->ID, $ignore_pages, true ) ) {
@@ -66,6 +68,27 @@ function custrest_restriction_meta_box_callback( $post ) {
         <label><input type="radio" name="custrest_override" value="force" <?php checked( $value, 'force' ); ?> /> <?php _e( 'Force Restriction (Login Required)', 'custrest' ); ?></label><br>
         <label><input type="radio" name="custrest_override" value="disable" <?php checked( $value, 'disable' ); ?> /> <?php _e( 'Disable Restriction (Always Public)', 'custrest' ); ?></label>
     </fieldset>
+    <fieldset aria-labelledby="custrest_roles_legend" style="margin-top:10px;">
+        <legend id="custrest_roles_legend"><?php _e( 'Allowed Roles (Override)', 'custrest' ); ?></legend>
+        <label for="custrest_roles_select" class="screen-reader-text"><?php _e( 'Allowed Roles', 'custrest' ); ?></label>
+        <select id="custrest_roles_select" name="custrest_roles[]" multiple style="width:100%;max-width:220px;min-height:60px;">
+            <option value="" <?php selected( empty( $roles_override ) ); ?>><?php _e( 'Inherit Global Roles', 'custrest' ); ?></option>
+            <?php
+            global $wp_roles;
+            if ( ! isset( $wp_roles ) ) $wp_roles = new WP_Roles();
+            $roles = $wp_roles->roles;
+            foreach ( $roles as $role_key => $role ) {
+                printf(
+                    '<option value="%s" %s>%s</option>',
+                    esc_attr( $role_key ),
+                    selected( is_array( $roles_override ) && in_array( $role_key, $roles_override, true ) ),
+                    esc_html( $role['name'] )
+                );
+            }
+            ?>
+        </select>
+        <p class="description"><?php _e( 'If set, only these roles can access this post/page. Leave empty to inherit global roles.', 'custrest' ); ?></p>
+    </fieldset>
     <?php
 }
 
@@ -84,5 +107,12 @@ function custrest_save_restriction_meta_box( $post_id ) {
         }
     } else {
         delete_post_meta( $post_id, '_custrest_override' );
+    }
+
+    if ( isset( $_POST['custrest_roles'] ) && is_array( $_POST['custrest_roles'] ) && array_filter( $_POST['custrest_roles'] ) ) {
+        $roles = array_map( 'sanitize_text_field', (array) $_POST['custrest_roles'] );
+        update_post_meta( $post_id, '_custrest_roles', $roles );
+    } else {
+        delete_post_meta( $post_id, '_custrest_roles' );
     }
 }

@@ -34,6 +34,7 @@ function custrest_maybe_restrict_access() {
     if ( ! in_array( $post_type, $restricted_types, true ) ) return;
 
     $override = get_post_meta( $post->ID, '_custrest_override', true );
+    $roles_override = get_post_meta( $post->ID, '_custrest_roles', true );
     if ( $override === 'disable' ) return;
     if ( $override === 'force' ) {
         $restricted = true;
@@ -48,9 +49,10 @@ function custrest_maybe_restrict_access() {
     if ( $restricted ) {
         $user = wp_get_current_user();
         $has_role = false;
-        if ( ! empty( $allowed_roles ) ) {
+        $roles_to_check = ( is_array( $roles_override ) && ! empty( $roles_override ) ) ? $roles_override : $allowed_roles;
+        if ( ! empty( $roles_to_check ) ) {
             foreach ( $user->roles as $role ) {
-                if ( in_array( $role, $allowed_roles, true ) ) {
+                if ( in_array( $role, $roles_to_check, true ) ) {
                     $has_role = true;
                     break;
                 }
