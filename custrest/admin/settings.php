@@ -24,6 +24,14 @@ add_action( 'admin_menu', function() {
         'custrest-logs',
         'custrest_logs_page'
     );
+    add_submenu_page(
+        'options-general.php',
+        __( 'Import/Export Restriction Settings', 'custrest' ),
+        __( 'Import/Export Restriction', 'custrest' ),
+        'manage_options',
+        'custrest-import-export',
+        'custrest_import_export_page'
+    );
 } );
 
 function custrest_admin_menu() {
@@ -441,5 +449,37 @@ function custrest_logs_page() {
         }
         echo '</div></div>';
     }
+    echo '</div>';
+}
+
+function custrest_import_export_page() {
+    if ( isset( $_POST['custrest_import'] ) && check_admin_referer( 'custrest_import', 'custrest_import_nonce' ) ) {
+        $json = isset( $_FILES['custrest_import_file']['tmp_name'] ) ? file_get_contents( $_FILES['custrest_import_file']['tmp_name'] ) : '';
+        $data = json_decode( $json, true );
+        if ( is_array( $data ) ) {
+            update_option( CUSTREST_OPTION_KEY, $data );
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings imported successfully.', 'custrest' ) . '</p></div>';
+        } else {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Invalid JSON file.', 'custrest' ) . '</p></div>';
+        }
+    }
+    echo '<div class="wrap"><h1>' . esc_html__( 'Import/Export Restriction Settings', 'custrest' ) . '</h1>';
+    echo '<h2>' . esc_html__( 'Export', 'custrest' ) . '</h2>';
+    echo '<form method="post"><input type="hidden" name="custrest_export" value="1" />';
+    submit_button( __( 'Download Export (JSON)', 'custrest' ) );
+    echo '</form>';
+    if ( isset( $_POST['custrest_export'] ) ) {
+        $settings = get_option( CUSTREST_OPTION_KEY );
+        header( 'Content-Type: application/json' );
+        header( 'Content-Disposition: attachment; filename=custrest-settings-' . date( 'Ymd-His' ) . '.json' );
+        echo wp_json_encode( $settings );
+        exit;
+    }
+    echo '<h2>' . esc_html__( 'Import', 'custrest' ) . '</h2>';
+    echo '<form method="post" enctype="multipart/form-data">';
+    wp_nonce_field( 'custrest_import', 'custrest_import_nonce' );
+    echo '<input type="file" name="custrest_import_file" accept="application/json" required /> ';
+    submit_button( __( 'Import Settings', 'custrest' ) );
+    echo '</form>';
     echo '</div>';
 }
