@@ -9,6 +9,7 @@ add_filter( 'manage_page_posts_columns', 'custrest_add_restriction_column' );
 add_filter( 'manage_post_posts_columns', 'custrest_add_restriction_column' );
 add_action( 'manage_page_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
 add_action( 'manage_post_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
+add_action( 'admin_notices', 'custrest_settings_updated_notice' );
 
 function custrest_admin_menu() {
     add_options_page(
@@ -227,4 +228,10 @@ function custrest_show_restriction_column( $column, $post_id ) {
         'ignored'    => '#ffb900',
     );
     echo '<span style="display:inline-block;padding:2px 8px;border-radius:4px;background:' . esc_attr( $status_colors[$status] ) . ';color:#fff;font-size:13px;">' . esc_html( $status_labels[$status] ) . '</span>';
+}
+
+function custrest_settings_updated_notice() {
+    if ( isset( $_GET['page'] ) && $_GET['page'] === 'custrest-settings' && isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] ) {
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Restrict Access settings updated.', 'custrest' ) . '</p></div>';
+    }
 }
