@@ -3,34 +3,51 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-add_action( 'admin_menu', 'custrest_admin_menu' );
-add_action( 'admin_init', 'custrest_register_settings' );
-add_filter( 'manage_page_posts_columns', 'custrest_add_restriction_column' );
-add_filter( 'manage_post_posts_columns', 'custrest_add_restriction_column' );
-add_action( 'manage_page_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
-add_action( 'manage_post_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
-add_action( 'admin_notices', 'custrest_settings_updated_notice' );
-add_filter( 'bulk_actions-edit-page', 'custrest_register_bulk_actions' );
-add_filter( 'bulk_actions-edit-post', 'custrest_register_bulk_actions' );
-add_filter( 'handle_bulk_actions-edit-page', 'custrest_handle_bulk_actions', 10, 3 );
-add_filter( 'handle_bulk_actions-edit-post', 'custrest_handle_bulk_actions', 10, 3 );
-add_action( 'admin_notices', 'custrest_bulk_action_notice' );
 add_action( 'admin_menu', function() {
+    $capability = apply_filters( 'custrest_admin_capability', 'manage_options' );
+    add_menu_page(
+        __( 'Restrict Access', 'custrest' ),
+        __( 'Restrict Access', 'custrest' ),
+        $capability,
+        'custrest-main',
+        'custrest_settings_page',
+        'dashicons-lock',
+        60
+    );
     add_submenu_page(
-        'options-general.php',
+        'custrest-main',
+        __( 'Settings', 'custrest' ),
+        __( 'Settings', 'custrest' ),
+        $capability,
+        'custrest-main',
+        'custrest_settings_page'
+    );
+    add_submenu_page(
+        'custrest-main',
         __( 'Restriction Logs', 'custrest' ),
         __( 'Restriction Logs', 'custrest' ),
-        'manage_options',
+        $capability,
         'custrest-logs',
         'custrest_logs_page'
     );
     add_submenu_page(
-        'options-general.php',
-        __( 'Import/Export Restriction Settings', 'custrest' ),
-        __( 'Import/Export Restriction', 'custrest' ),
-        'manage_options',
+        'custrest-main',
+        __( 'Import/Export', 'custrest' ),
+        __( 'Import/Export', 'custrest' ),
+        $capability,
         'custrest-import-export',
         'custrest_import_export_page'
+    );
+    add_submenu_page(
+        'custrest-main',
+        __( 'Documentation', 'custrest' ),
+        __( 'Documentation', 'custrest' ),
+        $capability,
+        'custrest-docs',
+        function() {
+            echo '<div class="wrap"><h1>' . esc_html__( 'Plugin Documentation', 'custrest' ) . '</h1>';
+            echo '<iframe src="https://github.com/your-repo" style="width:100%;height:600px;border:0;"></iframe></div>';
+        }
     );
 } );
 
@@ -202,6 +219,31 @@ function custrest_custom_message_field() {
 }
 
 function custrest_settings_page() {
+    if ( function_exists( 'get_current_screen' ) ) {
+        $screen = get_current_screen();
+        if ( $screen && $screen->id === 'toplevel_page_custrest-main' ) {
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_overview',
+                'title'   => __( 'Overview', 'custrest' ),
+                'content' => '<p>' . __( 'This plugin lets you restrict access to posts, pages, and custom post types by login, role, or time window. Use the settings below to configure global rules, or override them per post/page.', 'custrest' ) . '</p>',
+            ) );
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_shortcodes',
+                'title'   => __( 'Shortcodes & Blocks', 'custrest' ),
+                'content' => '<p>' . __( 'Use the [custrest_restricted] shortcode or the Restricted Content block to show content only to allowed users.', 'custrest' ) . '</p>' .
+                    '<pre>[custrest_restricted roles="editor,subscriber"]Secret[/custrest_restricted]</pre>',
+            ) );
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_logs',
+                'title'   => __( 'Logs & Audit', 'custrest' ),
+                'content' => '<p>' . __( 'View all blocked attempts in the Restriction Logs submenu. Filter by reason, user, or post.', 'custrest' ) . '</p>',
+            ) );
+            $screen->set_help_sidebar(
+                '<p><strong>' . __( 'Need Help?', 'custrest' ) . '</strong></p>' .
+                '<p><a href="https://github.com/your-repo" target="_blank">' . __( 'Plugin Documentation', 'custrest' ) . '</a></p>'
+            );
+        }
+    }
     ?>
     <div class="wrap">
         <h1 style="margin-bottom:24px;"><?php _e( 'Restrict Access Settings', 'custrest' ); ?></h1>
@@ -389,6 +431,21 @@ function custrest_bulk_action_notice() {
     }
 }
 
+add_action( 'admin_notices', function() {
+    if ( ! get_user_meta( get_current_user_id(), 'custrest_welcome_dismissed', true ) ) {
+        echo '<div class="notice notice-info is-dismissible custrest-welcome"><p>' .
+            esc_html__( 'Welcome to Restrict Access! Configure your restriction settings and audit logs from the new menu.', 'custrest' ) .
+            '</p></div>';
+        echo '<script>jQuery(document).on("click", ".custrest-welcome .notice-dismiss", function(){
+            jQuery.post(ajaxurl, {action: "custrest_dismiss_welcome"});
+        });</script>';
+    }
+} );
+add_action( 'wp_ajax_custrest_dismiss_welcome', function() {
+    update_user_meta( get_current_user_id(), 'custrest_welcome_dismissed', 1 );
+    wp_die();
+} );
+
 function custrest_logs_page() {
     global $wpdb;
     $table = $wpdb->prefix . 'custrest_logs';
@@ -453,6 +510,20 @@ function custrest_logs_page() {
 }
 
 function custrest_import_export_page() {
+    if ( function_exists( 'get_current_screen' ) ) {
+        $screen = get_current_screen();
+        if ( $screen && $screen->id === 'restrict-access_page_custrest-import-export' ) {
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_import_export_help',
+                'title'   => __( 'Import/Export Help', 'custrest' ),
+                'content' => '<p>' . __( 'Export your settings as JSON for backup or migration. Import a JSON file to restore settings.', 'custrest' ) . '</p>',
+            ) );
+            $screen->set_help_sidebar(
+                '<p><strong>' . __( 'Need Help?', 'custrest' ) . '</strong></p>' .
+                '<p><a href="https://github.com/your-repo" target="_blank">' . __( 'Plugin Documentation', 'custrest' ) . '</a></p>'
+            );
+        }
+    }
     if ( isset( $_POST['custrest_import'] ) && check_admin_referer( 'custrest_import', 'custrest_import_nonce' ) ) {
         $json = isset( $_FILES['custrest_import_file']['tmp_name'] ) ? file_get_contents( $_FILES['custrest_import_file']['tmp_name'] ) : '';
         $data = json_decode( $json, true );
