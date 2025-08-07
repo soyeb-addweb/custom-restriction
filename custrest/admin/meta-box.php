@@ -54,17 +54,18 @@ function custrest_restriction_meta_box_callback( $post ) {
     );
     wp_nonce_field( 'custrest_save_meta', 'custrest_meta_nonce' );
     ?>
-    <p style="margin-bottom:10px;">
+    <div aria-live="polite" aria-atomic="true" style="margin-bottom:10px;">
         <strong><?php _e( 'Current Restriction Status:', 'custrest' ); ?></strong><br>
         <span style="display:inline-block;padding:2px 8px;border-radius:4px;background:<?php echo esc_attr( $status_colors[$status] ); ?>;color:#fff;font-size:13px;">
             <?php echo esc_html( $status_labels[$status] ); ?>
         </span>
-    </p>
-    <p>
+    </div>
+    <fieldset aria-labelledby="custrest_restriction_legend">
+        <legend id="custrest_restriction_legend" class="screen-reader-text"><?php _e( 'Restriction Level', 'custrest' ); ?></legend>
         <label><input type="radio" name="custrest_override" value="inherit" <?php checked( $value, '' ); checked( $value, 'inherit' ); ?> /> <?php _e( 'Inherit Global Setting', 'custrest' ); ?></label><br>
         <label><input type="radio" name="custrest_override" value="force" <?php checked( $value, 'force' ); ?> /> <?php _e( 'Force Restriction (Login Required)', 'custrest' ); ?></label><br>
         <label><input type="radio" name="custrest_override" value="disable" <?php checked( $value, 'disable' ); ?> /> <?php _e( 'Disable Restriction (Always Public)', 'custrest' ); ?></label>
-    </p>
+    </fieldset>
     <?php
 }
 
