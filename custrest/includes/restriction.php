@@ -15,6 +15,10 @@ function custrest_maybe_restrict_access() {
     $options = get_option( CUSTREST_OPTION_KEY );
     $restricted_types = isset( $options['post_types'] ) ? (array) $options['post_types'] : array();
     $redirect_url = isset( $options['redirect_url'] ) && $options['redirect_url'] ? esc_url( $options['redirect_url'] ) : wp_login_url( get_permalink() );
+    $ignore_pages = isset( $options['ignore_pages'] ) ? (array) $options['ignore_pages'] : array();
+
+    // Always ignore restriction for selected pages/posts
+    if ( in_array( $post->ID, $ignore_pages, true ) ) return;
 
     $post_type = get_post_type( $post );
     if ( ! in_array( $post_type, $restricted_types, true ) ) return;

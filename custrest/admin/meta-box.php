@@ -24,8 +24,42 @@ function custrest_add_restriction_meta_box() {
 
 function custrest_restriction_meta_box_callback( $post ) {
     $value = get_post_meta( $post->ID, '_custrest_override', true );
+    $options = get_option( CUSTREST_OPTION_KEY );
+    $restricted_types = isset( $options['post_types'] ) ? (array) $options['post_types'] : array();
+    $ignore_pages = isset( $options['ignore_pages'] ) ? (array) $options['ignore_pages'] : array();
+    $post_type = get_post_type( $post );
+    $status = 'inherit';
+    if ( in_array( $post->ID, $ignore_pages, true ) ) {
+        $status = 'ignored';
+    } elseif ( $value === 'force' ) {
+        $status = 'restricted';
+    } elseif ( $value === 'disable' ) {
+        $status = 'public';
+    } elseif ( in_array( $post_type, $restricted_types, true ) ) {
+        $status = 'restricted';
+    } else {
+        $status = 'public';
+    }
+    $status_labels = array(
+        'restricted' => __( 'Restricted (Login Required)', 'custrest' ),
+        'public'     => __( 'Always Public', 'custrest' ),
+        'inherit'    => __( 'Inherit Global Setting', 'custrest' ),
+        'ignored'    => __( 'Ignored (Never Restricted)', 'custrest' ),
+    );
+    $status_colors = array(
+        'restricted' => '#d63638',
+        'public'     => '#46b450',
+        'inherit'    => '#0073aa',
+        'ignored'    => '#ffb900',
+    );
     wp_nonce_field( 'custrest_save_meta', 'custrest_meta_nonce' );
     ?>
+    <p style="margin-bottom:10px;">
+        <strong><?php _e( 'Current Restriction Status:', 'custrest' ); ?></strong><br>
+        <span style="display:inline-block;padding:2px 8px;border-radius:4px;background:<?php echo esc_attr( $status_colors[$status] ); ?>;color:#fff;font-size:13px;">
+            <?php echo esc_html( $status_labels[$status] ); ?>
+        </span>
+    </p>
     <p>
         <label><input type="radio" name="custrest_override" value="inherit" <?php checked( $value, '' ); checked( $value, 'inherit' ); ?> /> <?php _e( 'Inherit Global Setting', 'custrest' ); ?></label><br>
         <label><input type="radio" name="custrest_override" value="force" <?php checked( $value, 'force' ); ?> /> <?php _e( 'Force Restriction (Login Required)', 'custrest' ); ?></label><br>
