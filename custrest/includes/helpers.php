@@ -53,3 +53,46 @@ function custrest_is_post_restricted( $post_id ) {
     }
     return apply_filters( 'custrest_is_restricted', false, $post_id, $post_type );
 }
+
+/**
+ * Shortcode: [custrest_restricted roles="editor,subscriber"] ... [/custrest_restricted]
+ * Only shows content to users who pass restriction check (current post or by roles).
+ */
+function custrest_restricted_shortcode( $atts, $content = null ) {
+    $atts = shortcode_atts( array(
+        'roles' => '',
+    ), $atts, 'custrest_restricted' );
+    $show = false;
+    if ( ! empty( $atts['roles'] ) ) {
+        $user = wp_get_current_user();
+        $roles = array_map( 'trim', explode( ',', $atts['roles'] ) );
+        foreach ( $user->roles as $role ) {
+            if ( in_array( $role, $roles, true ) ) {
+                $show = true;
+                break;
+            }
+        }
+    } else {
+        global $post;
+        if ( isset( $post->ID ) && ! custrest_is_post_restricted( $post->ID ) ) {
+            $show = true;
+        }
+    }
+    if ( $show ) {
+        return do_shortcode( $content );
+    }
+    return '';
+}
+add_shortcode( 'custrest_restricted', 'custrest_restricted_shortcode' );
+
+// Basic Gutenberg block registration for restricted content
+add_action( 'init', function() {
+    if ( function_exists( 'register_block_type' ) ) {
+        register_block_type( 'custrest/restricted', array(
+            'render_callback' => function( $atts, $content ) {
+                return custrest_restricted_shortcode( array(), $content );
+            },
+            'attributes' => array(),
+        ) );
+    }
+} );
