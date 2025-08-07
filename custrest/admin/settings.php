@@ -10,6 +10,11 @@ add_filter( 'manage_post_posts_columns', 'custrest_add_restriction_column' );
 add_action( 'manage_page_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
 add_action( 'manage_post_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
 add_action( 'admin_notices', 'custrest_settings_updated_notice' );
+add_filter( 'bulk_actions-edit-page', 'custrest_register_bulk_actions' );
+add_filter( 'bulk_actions-edit-post', 'custrest_register_bulk_actions' );
+add_filter( 'handle_bulk_actions-edit-page', 'custrest_handle_bulk_actions', 10, 3 );
+add_filter( 'handle_bulk_actions-edit-post', 'custrest_handle_bulk_actions', 10, 3 );
+add_action( 'admin_notices', 'custrest_bulk_action_notice' );
 
 function custrest_admin_menu() {
     add_options_page(
@@ -233,5 +238,63 @@ function custrest_show_restriction_column( $column, $post_id ) {
 function custrest_settings_updated_notice() {
     if ( isset( $_GET['page'] ) && $_GET['page'] === 'custrest-settings' && isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] ) {
         echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Restrict Access settings updated.', 'custrest' ) . '</p></div>';
+    }
+}
+
+function custrest_register_bulk_actions( $bulk_actions ) {
+    $bulk_actions['custrest_set_restriction'] = __( 'Set Restriction (Login Required)', 'custrest' );
+    $bulk_actions['custrest_clear_restriction'] = __( 'Clear Restriction (Always Public)', 'custrest' );
+    $bulk_actions['custrest_ignore_restriction'] = __( 'Ignore Restriction (Never Restricted)', 'custrest' );
+    return $bulk_actions;
+}
+
+function custrest_handle_bulk_actions( $redirect_to, $doaction, $post_ids ) {
+    $count = 0;
+    $options = get_option( CUSTREST_OPTION_KEY );
+    $ignore_pages = isset( $options['ignore_pages'] ) ? (array) $options['ignore_pages'] : array();
+    if ( $doaction === 'custrest_set_restriction' ) {
+        foreach ( $post_ids as $post_id ) {
+            update_post_meta( $post_id, '_custrest_override', 'force' );
+            $ignore_pages = array_diff( $ignore_pages, array( $post_id ) );
+            $count++;
+        }
+        $options['ignore_pages'] = $ignore_pages;
+        update_option( CUSTREST_OPTION_KEY, $options );
+        $redirect_to = add_query_arg( 'custrest_bulk_set', $count, $redirect_to );
+    }
+    if ( $doaction === 'custrest_clear_restriction' ) {
+        foreach ( $post_ids as $post_id ) {
+            update_post_meta( $post_id, '_custrest_override', 'disable' );
+            $ignore_pages = array_diff( $ignore_pages, array( $post_id ) );
+            $count++;
+        }
+        $options['ignore_pages'] = $ignore_pages;
+        update_option( CUSTREST_OPTION_KEY, $options );
+        $redirect_to = add_query_arg( 'custrest_bulk_clear', $count, $redirect_to );
+    }
+    if ( $doaction === 'custrest_ignore_restriction' ) {
+        foreach ( $post_ids as $post_id ) {
+            delete_post_meta( $post_id, '_custrest_override' );
+            if ( ! in_array( $post_id, $ignore_pages, true ) ) {
+                $ignore_pages[] = $post_id;
+            }
+            $count++;
+        }
+        $options['ignore_pages'] = $ignore_pages;
+        update_option( CUSTREST_OPTION_KEY, $options );
+        $redirect_to = add_query_arg( 'custrest_bulk_ignore', $count, $redirect_to );
+    }
+    return $redirect_to;
+}
+
+function custrest_bulk_action_notice() {
+    if ( ! empty( $_REQUEST['custrest_bulk_set'] ) ) {
+        printf( '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Restriction set for %d items.', 'custrest' ) . '</p></div>', intval( $_REQUEST['custrest_bulk_set'] ) );
+    }
+    if ( ! empty( $_REQUEST['custrest_bulk_clear'] ) ) {
+        printf( '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Restriction cleared for %d items.', 'custrest' ) . '</p></div>', intval( $_REQUEST['custrest_bulk_clear'] ) );
+    }
+    if ( ! empty( $_REQUEST['custrest_bulk_ignore'] ) ) {
+        printf( '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Restriction ignored for %d items.', 'custrest' ) . '</p></div>', intval( $_REQUEST['custrest_bulk_ignore'] ) );
     }
 }
