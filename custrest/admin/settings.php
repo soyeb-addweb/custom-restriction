@@ -207,6 +207,31 @@ function custrest_custom_message_field() {
 }
 
 function custrest_settings_page() {
+    if ( function_exists( 'get_current_screen' ) ) {
+        $screen = get_current_screen();
+        if ( $screen && $screen->id === 'toplevel_page_custrest-main' ) {
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_overview',
+                'title'   => __( 'Overview', 'custrest' ),
+                'content' => '<p>' . __( 'This plugin lets you restrict access to posts, pages, and custom post types by login, role, or time window. Use the settings below to configure global rules, or override them per post/page.', 'custrest' ) . '</p>',
+            ) );
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_shortcodes',
+                'title'   => __( 'Shortcodes & Blocks', 'custrest' ),
+                'content' => '<p>' . __( 'Use the [custrest_restricted] shortcode or the Restricted Content block to show content only to allowed users.', 'custrest' ) . '</p>' .
+                    '<pre>[custrest_restricted roles="editor,subscriber"]Secret[/custrest_restricted]</pre>',
+            ) );
+            $screen->add_help_tab( array(
+                'id'      => 'custrest_logs',
+                'title'   => __( 'Logs & Audit', 'custrest' ),
+                'content' => '<p>' . __( 'View all blocked attempts in the Restriction Logs submenu. Filter by reason, user, or post.', 'custrest' ) . '</p>',
+            ) );
+            $screen->set_help_sidebar(
+                '<p><strong>' . __( 'Need Help?', 'custrest' ) . '</strong></p>' .
+                '<p><a href="https://github.com/your-repo" target="_blank">' . __( 'Plugin Documentation', 'custrest' ) . '</a></p>'
+            );
+        }
+    }
     ?>
     <div class="wrap">
         <h1 style="margin-bottom:24px;"><?php _e( 'Restrict Access Settings', 'custrest' ); ?></h1>
