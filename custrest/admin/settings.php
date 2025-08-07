@@ -247,10 +247,11 @@ function custrest_settings_page() {
     ?>
     <div class="wrap">
         <h1 style="margin-bottom:24px;"><?php _e( 'Restrict Access Settings', 'custrest' ); ?></h1>
-        <form method="post" action="options.php" style="background:#fff;padding:24px 32px 16px 32px;border-radius:8px;max-width:700px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <?php settings_errors(); ?>
+        <form method="post" action="options.php">
             <?php
             settings_fields( 'custrest_settings_group' );
-            do_settings_sections( 'custrest-settings' );
+            do_settings_sections( 'custrest-main' );
             submit_button( __( 'Save Settings', 'custrest' ) );
             ?>
         </form>
@@ -554,3 +555,20 @@ function custrest_import_export_page() {
     echo '</form>';
     echo '</div>';
 }
+
+// Force correct parent menu highlight
+add_filter('parent_file', function($parent_file) {
+    global $plugin_page;
+    if (in_array($plugin_page, ['custrest-main', 'custrest-logs', 'custrest-import-export', 'custrest-docs'])) {
+        return 'custrest-main';
+    }
+    return $parent_file;
+});
+
+// Fix settings updated notice for custom menu
+add_action('admin_init', function() {
+    if ( isset($_GET['page']) && $_GET['page'] === 'custrest-main' && isset($_POST['option_page']) && $_POST['option_page'] === 'custrest_settings_group' ) {
+        wp_redirect( admin_url('admin.php?page=custrest-main&settings-updated=true') );
+        exit;
+    }
+});
