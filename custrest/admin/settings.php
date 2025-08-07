@@ -3,21 +3,26 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-add_action( 'admin_menu', 'custrest_admin_menu' );
-add_action( 'admin_init', 'custrest_register_settings' );
-add_filter( 'manage_page_posts_columns', 'custrest_add_restriction_column' );
-add_filter( 'manage_post_posts_columns', 'custrest_add_restriction_column' );
-add_action( 'manage_page_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
-add_action( 'manage_post_posts_custom_column', 'custrest_show_restriction_column', 10, 2 );
-add_action( 'admin_notices', 'custrest_settings_updated_notice' );
-add_filter( 'bulk_actions-edit-page', 'custrest_register_bulk_actions' );
-add_filter( 'bulk_actions-edit-post', 'custrest_register_bulk_actions' );
-add_filter( 'handle_bulk_actions-edit-page', 'custrest_handle_bulk_actions', 10, 3 );
-add_filter( 'handle_bulk_actions-edit-post', 'custrest_handle_bulk_actions', 10, 3 );
-add_action( 'admin_notices', 'custrest_bulk_action_notice' );
 add_action( 'admin_menu', function() {
+    add_menu_page(
+        __( 'Restrict Access', 'custrest' ),
+        __( 'Restrict Access', 'custrest' ),
+        'manage_options',
+        'custrest-main',
+        'custrest_settings_page',
+        'dashicons-lock',
+        60
+    );
     add_submenu_page(
-        'options-general.php',
+        'custrest-main',
+        __( 'Settings', 'custrest' ),
+        __( 'Settings', 'custrest' ),
+        'manage_options',
+        'custrest-main',
+        'custrest_settings_page'
+    );
+    add_submenu_page(
+        'custrest-main',
         __( 'Restriction Logs', 'custrest' ),
         __( 'Restriction Logs', 'custrest' ),
         'manage_options',
@@ -25,9 +30,9 @@ add_action( 'admin_menu', function() {
         'custrest_logs_page'
     );
     add_submenu_page(
-        'options-general.php',
-        __( 'Import/Export Restriction Settings', 'custrest' ),
-        __( 'Import/Export Restriction', 'custrest' ),
+        'custrest-main',
+        __( 'Import/Export', 'custrest' ),
+        __( 'Import/Export', 'custrest' ),
         'manage_options',
         'custrest-import-export',
         'custrest_import_export_page'
