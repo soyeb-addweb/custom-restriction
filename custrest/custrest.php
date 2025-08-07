@@ -57,3 +57,30 @@ function custrest_create_logs_table() {
     ) $charset_collate;";
     dbDelta( $sql );
 }
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+    WP_CLI::add_command( 'custrest', 'Custrest_CLI_Command' );
+    class Custrest_CLI_Command {
+        /**
+         * Check restriction status for a post.
+         *
+         * ## OPTIONS
+         *
+         * <post_id>
+         * : The post ID to check.
+         *
+         * ## EXAMPLES
+         *
+         *     wp custrest status 123
+         */
+        public function status( $args, $assoc_args ) {
+            $post_id = intval( $args[0] );
+            if ( ! get_post( $post_id ) ) {
+                WP_CLI::error( 'Post not found.' );
+            }
+            require_once CUSTREST_DIR . 'includes/helpers.php';
+            $restricted = custrest_is_post_restricted( $post_id );
+            WP_CLI::success( 'Post ' . $post_id . ' is ' . ( $restricted ? 'RESTRICTED' : 'PUBLIC' ) . '.' );
+        }
+    }
+}

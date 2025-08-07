@@ -96,3 +96,18 @@ add_action( 'init', function() {
         ) );
     }
 } );
+
+add_action( 'rest_api_init', function() {
+    register_rest_route( 'custrest/v1', '/status/(?P<id>\d+)', array(
+        'methods' => 'GET',
+        'callback' => function( $request ) {
+            $post_id = intval( $request['id'] );
+            if ( ! get_post( $post_id ) ) {
+                return new WP_Error( 'not_found', __( 'Post not found', 'custrest' ), array( 'status' => 404 ) );
+            }
+            $restricted = custrest_is_post_restricted( $post_id );
+            return array( 'post_id' => $post_id, 'restricted' => $restricted );
+        },
+        'permission_callback' => '__return_true',
+    ) );
+} );
