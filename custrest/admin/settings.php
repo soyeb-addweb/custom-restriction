@@ -68,14 +68,14 @@ function custrest_register_settings() {
         'custrest_main_section',
         __( 'Restriction Settings', 'custrest' ),
         '__return_false',
-        'custrest-settings'
+        'custrest-main'
     );
 
     add_settings_field(
         'custrest_post_types',
         __( 'Post Types to Restrict', 'custrest' ),
         'custrest_post_types_field',
-        'custrest-settings',
+        'custrest-main',
         'custrest_main_section'
     );
 
@@ -83,7 +83,7 @@ function custrest_register_settings() {
         'custrest_allowed_roles',
         __( 'Allowed User Roles', 'custrest' ),
         'custrest_allowed_roles_field',
-        'custrest-settings',
+        'custrest-main',
         'custrest_main_section'
     );
 
@@ -91,7 +91,7 @@ function custrest_register_settings() {
         'custrest_ignore_pages',
         __( 'Ignore Pages/Posts', 'custrest' ),
         'custrest_ignore_pages_field',
-        'custrest-settings',
+        'custrest-main',
         'custrest_main_section'
     );
 
@@ -99,7 +99,7 @@ function custrest_register_settings() {
         'custrest_redirect_url',
         __( 'Redirect URL if not logged in', 'custrest' ),
         'custrest_redirect_url_field',
-        'custrest-settings',
+        'custrest-main',
         'custrest_main_section'
     );
 
@@ -107,7 +107,7 @@ function custrest_register_settings() {
         'custrest_time_window',
         __( 'Global Access Window', 'custrest' ),
         'custrest_time_window_field',
-        'custrest-settings',
+        'custrest-main',
         'custrest_main_section'
     );
 
@@ -115,7 +115,7 @@ function custrest_register_settings() {
         'custrest_custom_message',
         __( 'Custom Restriction Message', 'custrest' ),
         'custrest_custom_message_field',
-        'custrest-settings',
+        'custrest-main',
         'custrest_main_section'
     );
 }
